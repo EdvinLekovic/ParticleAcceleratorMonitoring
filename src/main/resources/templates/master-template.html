@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>Particle Accelerator Monitoring</title>
+    <!-- CSS here -->
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0-2/css/all.min.css"
+          integrity="sha256-46r060N2LrChLLb5zowXQ72/iKKNiw/lAmygmHExk/o=" crossorigin="anonymous"/>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+            integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+            integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+            integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body class="class1">
+
+<section th:replace="fragments/sidebar"/>
+
+<section th:include="${bodyContent}"/>
+
+<footer th:replace="fragments/footer"/>
+
+<script>
+    $(document).ready(function () {
+        // Initialize WebSocket connection
+        let socket = new SockJS('/ws');
+        let stompClient = Stomp.over(socket);
+
+        // Connect to WebSocket
+        stompClient.connect({}, function (frame) {
+            console.log('Connected: ' + frame);
+
+            // Subscribe to temperature alert topic
+            stompClient.subscribe('/topic/temperature-alert', function (alertMessage) {
+                let alertData = JSON.parse(alertMessage.body);
+                showAlertModal(alertData.message);
+            });
+
+            // Subscribe to pressure alert topic
+            stompClient.subscribe('/topic/pressure-alert', function (alertMessage) {
+                let alertData = JSON.parse(alertMessage.body);
+                showAlertModal(alertData.message);
+            });
+
+            // Subscribe to humidity alert topic
+            stompClient.subscribe('/topic/humidity-alert', function (alertMessage) {
+                let alertData = JSON.parse(alertMessage.body);
+                showAlertModal(alertData.message);
+            });
+
+            // Subscribe to radiation alert topic
+            stompClient.subscribe('/topic/radiation-alert', function (alertMessage) {
+                let alertData = JSON.parse(alertMessage.body);
+                showAlertModal(alertData.message);
+            });
+        });
+
+        // Function to show an alert modal
+        function showAlertModal(message) {
+            let modalHtml = `
+                <div class="modal fade" id="alertModal" tabindex="-1" role="dialog" aria-labelledby="alertModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="alertModalLabel">Temperature Alert</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body text-danger">
+                                <i class="fas fa-circle-exclamation text-danger"></i>
+                                <p>${message}</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+
+            $('body').append(modalHtml);
+            $('#alertModal').modal('show');
+            $('#alertModal').on('hidden.bs.modal', function () {
+                $(this).remove(); // Remove the modal from the DOM after it is closed
+            });
+        }
+    })
+</script>

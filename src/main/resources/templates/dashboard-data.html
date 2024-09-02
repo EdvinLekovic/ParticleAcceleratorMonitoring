@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Include the necessary libraries -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+<style>
+    #dataAlertTableBody td {
+        word-break: break-word;
+        white-space: normal;
+    }
+</style>
+<!-- Main Content Area -->
+<div class="content">
+    <div class="no-data-message">
+        <div class="no-data-box">
+            <p th:text="'No ' + ${dataTypeName} + ' data in the system'">
+                No Temperature data in the system</p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header" th:text="${dataTypeName} + ' data'">Temperatures data</div>
+                <div class="card-body">
+                    <canvas id="dataChart"></canvas>
+                </div>
+            </div>
+            <!-- Alerts Section Immediately Below the Chart -->
+            <div class="card mt-3">
+                <div id="noDataAlerts" class="no-data-message">
+                    <div class="no-data-box">
+                        <p th:text="'No ' + ${dataTypeName} + ' alerts data in the system'">
+                            No Temperature alerts data in the system</p>
+                    </div>
+                </div>
+                <div class="card-header data-alert" th:text="${dataTypeName} + ' Alerts'">Temperatures Alerts</div>
+                <div class="card-body data-alert">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>Alert message</th>
+                            <th>Alert timestamp</th>
+                        </tr>
+                        </thead>
+                        <tbody id="dataAlertTableBody">
+                        <!-- More rows will be added dynamically -->
+                        </tbody>
+                    </table>
+                    <!-- Pagination Controls -->
+                    <nav>
+                        <ul class="pagination" id="paginationAlertControls">
+                            <!-- Pagination buttons will be added here dynamically -->
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header" th:text="${dataTypeName} + ' details'">Temperatures details</div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th th:text="${dataTypeName} + ' ID'">Temperature ID</th>
+                            <th th:text="${dataTypeName} + ' sensor ID'">Temperature sensor ID</th>
+                            <th th:text="${dataTypeName} + ' timestamp'">Temperature timestamp</th>
+                            <th th:text="${dataTypeName} + ' value'">Temperature value</th>
+                        </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                        <!-- More rows will be added dynamically -->
+                        </tbody>
+                    </table>
+                    <!-- Pagination Controls -->
+                    <nav>
+                        <ul class="pagination" id="paginationControls">
+                            <!-- Pagination buttons will be added here dynamically -->
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script th:inline="javascript">
+    $(document).ready(function () {
+        const pageSize = 5; // Number of data per page
+        let currentPage = 0; // Track the current page
+        let dataList = []; // Store all data
+        let dataAlertsList = []
+        let dataSocketApiUrl = [[${dataSocketApiUrl}]]
+        let dataSocketAlertsApiUrl = [[${dataSocketAlertsApiUrl}]]
+        let dataApiUrl = [[${dataApiUrl}]]
+        let dataAlertApiUrl = [[${dataAlertApiUrl}]]
+        let dataTypeName = [[${dataTypeName}]]
+        console.log(dataSocketAlertsApiUrl);
+        console.log(dataSocketApiUrl);
+        console.log(dataApiUrl)
+        console.log(dataAlertApiUrl)
+        console.log(dataTypeName)
+
+        // Initialize WebSocket connection
+        let socket = new SockJS('/ws');
+        let stompClient = Stomp.over(socket);
+
+        // Initialize Chart.js
+        var ctx = $('#dataChart')[0].getContext('2d');
+        var dataChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], // Initialize empty labels
+                datasets: [{
+                    label: dataTypeName,
+                    data: [], // Initialize empty data
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Fetch and display initial data
+        fetchData(currentPage);
+        fetchDataAlerts(currentPage)
+
+        // Connect to WebSocket
+        stompClient.connect({}, function (frame) {
+            console.log('Connected: ' + frame);
+
+            // Subscribe to the topic where data updates are sent
+            stompClient.subscribe(dataSocketApiUrl, function (message) {
+                let data = JSON.parse(message.body);
+                console.log("data retrieve")
+                console.log(data)
+                updateDataChart(data);
+                addDataToList(data);
+                updateTable(); // Refresh the table based on updated data
+                setupPagination(Math.ceil(dataList.length / pageSize), currentPage);
+            });
+
+            // Subscribe to data alert topic
+            stompClient.subscribe(dataSocketAlertsApiUrl, function (alertMessage) {
+                let alertData = JSON.parse(alertMessage.body);
+                console.log("Alert data")
+                console.log(alertData)
+                addDataAlertToList(alertData)
+                updateAlertTable();
+                setupAlertPagination(Math.ceil(dataAlertsList.length / pageSize), currentPage);
+            });
+        });
+
+        // Function to update the chart with new data
+        function updateDataChart(data) {
+            if (dataChart.data.labels.length >= 5) {
+                dataChart.data.labels.shift();
+                dataChart.data.datasets[0].data.shift();
+            }
+            dataChart.data.labels.push(new Date(data.timestamp).toLocaleTimeString());
+            dataChart.data.datasets[0].data.push(data.value);
+            dataChart.update();
+        }
+
+        // Function to fetch data with pagination
+        function fetchData(page) {
+            $.ajax({
+                url: `${dataApiUrl}?page=${page}&size=${pageSize}`,
+                method: 'GET',
+                success: function (response) {
+                    dataList = response.content; // Update with the latest fetched data
+                    if (dataList.length === 0) {
+                        showNoDataMessage();
+                    } else {
+                        updateTable(); // Refresh the table based on updated data
+                        setupPagination(response.totalPages, page);
+
+                        // Reverse the list for chart updating
+                        let reversedData = [...response.content].reverse();
+
+                        // Populate the chart with the reversed data
+                        reversedData.forEach(data => {
+                            data.value = parseFloat(data.value).toFixed(2);
+                            updateDataChart(data);
+                        });
+
+                        showData();
+                    }
+                }
+            });
+        }
+
+        // Function to fetch data alerts with pagination
+        function fetchDataAlerts(page) {
+            $.ajax({
+                url: `${dataAlertApiUrl}?page=${page}&size=${pageSize}`,
+                method: 'GET',
+                success: function (response) {
+                    dataAlertsList = response.content; // Update with the latest fetched data alerts
+                    console.log(dataAlertsList)
+                    if (dataAlertsList.length === 0) {
+                        showNoAlertsDataMessage();
+                    } else {
+                        updateAlertTable(); // Refresh the table based on updated data alerts
+                        setupAlertPagination(response.totalPages, page)
+                        showAlertsData();
+                    }
+                }
+            });
+        }
+
+
+        // Function to show the "No data" message
+        function showNoDataMessage() {
+            $('.no-data-message').show();
+            $('.content .row').hide();
+        }
+
+        // Function to show the "No data" message
+        function showNoAlertsDataMessage() {
+            $('#noDataAlerts').show();
+            $('.data-alert').hide();
+        }
+
+        // Function to show data (chart and table)
+        function showData() {
+            $('.no-data-message').hide();
+            $('.content .row').show();
+        }
+
+        // Function to show the "No data" message
+        function showAlertsData() {
+            $('#noDataAlerts').hide();
+            $('.data-alert').show();
+        }
+
+        // Function to update the table with the current page of data
+        function updateTable() {
+            let tableBody = $('#dataTableBody');
+            tableBody.empty();
+
+            // Get the data for the current page
+            let startIndex = currentPage * pageSize;
+            let endIndex = Math.min(startIndex + pageSize, dataList.length);
+            let pageData = dataList.slice(startIndex, endIndex);
+
+            pageData.forEach(data => {
+                let newRow = $('<tr>');
+                $('<td>').text(data.id).appendTo(newRow);
+                $('<td>').text(data.sensor.id).appendTo(newRow);
+                $('<td>').text(new Date(data.timestamp).toLocaleString()).appendTo(newRow);
+                $('<td>').text(parseFloat(data.value).toFixed(5)).appendTo(newRow);
+                tableBody.append(newRow);
+            });
+        }
+
+        // Function to update the alert table with new alert data
+        function updateAlertTable() {
+            let alertTableBody = $('#dataAlertTableBody');
+            alertTableBody.empty()
+
+            // Get the data for the current page
+            let startIndex = currentPage * pageSize;
+            let endIndex = Math.min(startIndex + pageSize, dataAlertsList.length);
+            let pageDataAlerts = dataAlertsList.slice(startIndex, endIndex);
+
+            pageDataAlerts.forEach(dataAlert => {
+                let newRow = $('<tr>');
+                $('<td>').text(dataAlert.message).css({
+                    'color': 'red',
+                    'word-break': 'break-word',  // Ensures text breaks within the cell
+                    'white-space': 'normal'      // Allows the text to wrap to the next line
+                }).appendTo(newRow);
+                $('<td>').text(new Date(dataAlert.timestamp).toLocaleString()).appendTo(newRow);
+                alertTableBody.append(newRow);
+            })
+        }
+
+        // Function to add a new data to the list
+        function addDataToList(data) {
+            dataList.unshift(data); // Add new data to the start of the array
+
+            // Limit to 5 rows on the current page
+            if (dataList.length > (currentPage + 1) * pageSize) {
+                dataList.pop(); // Remove the oldest data
+            }
+
+            updateTable(); // Refresh the table based on updated data
+        }
+
+        function addDataAlertToList(data) {
+            dataAlertsList.unshift(data); // Add new data to the start of the array
+
+            // Limit to 5 rows on the current page
+            if (dataAlertsList.length > (currentPage + 1) * pageSize) {
+                dataAlertsList.pop(); // Remove the oldest data
+            }
+
+            updateAlertTable(); // Refresh the table based on updated data
+        }
+
+        // Function to setup pagination controls
+        function setupPagination(totalPages, currentPage) {
+            let paginationControls = $('#paginationControls');
+            paginationControls.empty();
+
+            // Add Previous button
+            let prevItem = $('<li>').addClass('page-item');
+            let prevLink = $('<a>').addClass('page-link').text('«').attr('href', '#');
+            if (currentPage === 0) {
+                prevItem.addClass('disabled');
+            } else {
+                prevLink.on('click', function (e) {
+                    e.preventDefault();
+                    fetchData(currentPage - 1);
+                });
+            }
+            prevItem.append(prevLink);
+            paginationControls.append(prevItem);
+
+            // Determine the range of pages to show
+            let startPage = Math.max(0, currentPage - 1); // Show 1 page before
+            let endPage = Math.min(totalPages - 1, currentPage + 1); // Show 1 page after
+
+            // Adjust the range to show exactly 3 pages if possible
+            if (endPage - startPage + 1 < 3) {
+                if (startPage > 0) {
+                    startPage = Math.max(0, endPage - 2); // Ensure there are at least 3 pages
+                }
+                if (endPage < totalPages - 1) {
+                    endPage = Math.min(totalPages - 1, startPage + 2); // Ensure there are at least 3 pages
+                }
+            }
+
+            // Add page numbers
+            for (let i = startPage; i <= endPage; i++) {
+                let pageItem = $('<li>').addClass('page-item');
+                let pageLink = $('<a>').addClass('page-link').text(i + 1).attr('href', '#');
+                if (i === currentPage) {
+                    pageItem.addClass('active');
+                } else {
+                    pageLink.on('click', function (e) {
+                        e.preventDefault();
+                        fetchData(i);
+                    });
+                }
+                pageItem.append(pageLink);
+                paginationControls.append(pageItem);
+            }
+
+            // Add Next button
+            let nextItem = $('<li>').addClass('page-item');
+            let nextLink = $('<a>').addClass('page-link').text('»').attr('href', '#');
+            if (currentPage === totalPages - 1) {
+                nextItem.addClass('disabled');
+            } else {
+                nextLink.on('click', function(e) {
+                    e.preventDefault();
+                    fetchData(currentPage + 1);
+                });
+            }
+            nextItem.append(nextLink);
+            paginationControls.append(nextItem);
+        }
+
+        function setupAlertPagination(totalPages, currentPage) {
+            let paginationControls = $('#paginationAlertControls');
+            paginationControls.empty();
+
+            // Add Previous button
+            let prevItem = $('<li>').addClass('page-item');
+            let prevLink = $('<a>').addClass('page-link').text('«').attr('href', '#');
+            if (currentPage === 0) {
+                prevItem.addClass('disabled');
+            } else {
+                prevLink.on('click', function (e) {
+                    e.preventDefault();
+                    fetchDataAlerts(currentPage - 1);
+                });
+            }
+            prevItem.append(prevLink);
+            paginationControls.append(prevItem);
+
+            // Determine the range of pages to show
+            let startPage = Math.max(0, currentPage - 1); // Show 1 page before
+            let endPage = Math.min(totalPages - 1, currentPage + 1); // Show 1 page after
+
+            // Adjust the range to show exactly 3 pages if possible
+            if (endPage - startPage + 1 < 3) {
+                if (startPage > 0) {
+                    startPage = Math.max(0, endPage - 2); // Ensure there are at least 3 pages
+                }
+                if (endPage < totalPages - 1) {
+                    endPage = Math.min(totalPages - 1, startPage + 2); // Ensure there are at least 3 pages
+                }
+            }
+
+            // Add page numbers
+            for (let i = startPage; i <= endPage; i++) {
+                let pageItem = $('<li>').addClass('page-item');
+                let pageLink = $('<a>').addClass('page-link').text(i + 1).attr('href', '#');
+                if (i === currentPage) {
+                    pageItem.addClass('active');
+                } else {
+                    pageLink.on('click', function (e) {
+                        e.preventDefault();
+                        fetchDataAlerts(i);
+                    });
+                }
+                pageItem.append(pageLink);
+                paginationControls.append(pageItem);
+            }
+
+            // Add Next button
+            let nextItem = $('<li>').addClass('page-item');
+            let nextLink = $('<a>').addClass('page-link').text('»').attr('href', '#');
+            if (currentPage === totalPages - 1) {
+                nextItem.addClass('disabled');
+            } else {
+                nextLink.on('click', function (e) {
+                    e.preventDefault();
+                    fetchDataAlerts(currentPage + 1);
+                });
+            }
+            nextItem.append(nextLink);
+            paginationControls.append(nextItem);
+        }
+    });
+</script>
+</body>
+</html>

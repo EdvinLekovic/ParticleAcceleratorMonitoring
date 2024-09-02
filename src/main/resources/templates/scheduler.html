@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Particle Accelerator Monitoring</title>
+</head>
+<body>
+<section class="content">
+    <h1>Scheduler</h1>
+    <!-- Group 1 -->
+    <h5>Temperature Scheduler</h5>
+    <div class="d-flex align-items-center">
+        <!-- Form for POST request -->
+        <form th:action="'/temperatures/start-scheduler'" method="POST" class="d-flex align-items-center">
+            <div class="mr-2">
+                <input required type="number" class="form-control" placeholder="Enter duration" name="duration">
+            </div>
+            <div class="mr-2">
+                <select required name="timeUnit" class="form-control">
+                    <option th:each="timeUnit : ${timeUnits}"
+                            th:value="${timeUnit}"
+                            th:text="${timeUnit}">
+                    </option>
+                </select>
+            </div>
+            <div class="mr-2">
+                <button th:disabled="${temperatureSchedulerExist}"
+                        type="submit" class="btn btn-success">Start</button>
+            </div>
+        </form>
+
+        <!-- Button for GET request -->
+        <form th:action="'/temperatures/stop-scheduler'" method="GET">
+            <button th:disabled="${!temperatureSchedulerExist}" class="btn btn-danger">Stop</button>
+        </form>
+    </div>
+
+
+
+    <!-- Group 2 -->
+    <h5>Pressure Scheduler</h5>
+    <div class="d-flex align-items-center">
+        <!-- Form for POST request -->
+        <form th:action="'/pressures/start-scheduler'" method="POST" class="d-flex align-items-center">
+            <div class="mr-2">
+                <input required type="number" class="form-control" placeholder="Enter duration" name="duration">
+            </div>
+            <div class="mr-2">
+                <select required name="timeUnit" class="form-control">
+                    <option th:each="timeUnit : ${timeUnits}"
+                            th:value="${timeUnit}"
+                            th:text="${timeUnit}">
+                    </option>
+                </select>
+            </div>
+            <div class="mr-2">
+                <button th:disabled="${pressureSchedulerExist}" type="submit" class="btn btn-success">Start</button>
+            </div>
+        </form>
+
+        <!-- Button for GET request -->
+        <form th:action="'/pressures/stop-scheduler'" method="GET">
+            <button th:disabled="${!pressureSchedulerExist}" class="btn btn-danger">Stop</button>
+        </form>
+    </div>
+
+    <!-- Group 3 -->
+    <h5>Humidity Scheduler</h5>
+    <div class="d-flex align-items-center">
+        <!-- Form for POST request -->
+        <form th:action="'/humidities/start-scheduler'" method="POST" class="d-flex align-items-center">
+            <div class="mr-2">
+                <input required type="number" class="form-control" placeholder="Enter duration" name="duration">
+            </div>
+            <div class="mr-2">
+                <select required name="timeUnit" class="form-control">
+                    <option th:each="timeUnit : ${timeUnits}"
+                            th:value="${timeUnit}"
+                            th:text="${timeUnit}">
+                    </option>
+                </select>
+            </div>
+            <div class="mr-2">
+                <button th:disabled="${humiditySchedulerExist}" type="submit" class="btn btn-success">Start</button>
+            </div>
+        </form>
+
+        <!-- Button for GET request -->
+        <form th:action="'/humidities/stop-scheduler'" method="GET">
+            <button th:disabled="${!humiditySchedulerExist}" class="btn btn-danger">Stop</button>
+        </form>
+    </div>
+
+    <!-- Group 4 -->
+    <h5>Radiation Scheduler</h5>
+    <div class="d-flex align-items-center">
+        <!-- Form for POST request -->
+        <form th:action="'/radiations/start-scheduler'" method="POST" class="d-flex align-items-center">
+            <div class="mr-2">
+                <input required type="number" class="form-control" placeholder="Enter duration" name="duration">
+            </div>
+            <div class="mr-2">
+                <select required name="timeUnit" class="form-control">
+                    <option th:each="timeUnit : ${timeUnits}"
+                            th:value="${timeUnit}"
+                            th:text="${timeUnit}">
+                    </option>
+                </select>
+            </div>
+            <div class="mr-2">
+                <button th:disabled="${radiationSchedulerExist}" type="submit" class="btn btn-success">Start</button>
+            </div>
+        </form>
+
+        <!-- Button for GET request -->
+        <form th:action="'/radiations/stop-scheduler'" method="GET">
+            <button th:disabled="${!radiationSchedulerExist}" class="btn btn-danger">Stop</button>
+        </form>
+    </div>
+</section>
+</body>
+</html>

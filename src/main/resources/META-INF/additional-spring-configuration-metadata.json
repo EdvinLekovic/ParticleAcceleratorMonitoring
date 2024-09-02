@@ -1,0 +1,23 @@
+{
+  "properties": [
+    {
+      "name": "temperature.schedule.rate",
+      "type": "java.lang.String",
+      "description": "Description for temperature.schedule.rate."
+    },
+    {
+      "name": "humidity.schedule.rate",
+      "type": "java.lang.String",
+      "description": "Description for humidity.schedule.rate."
+    },
+    {
+      "name": "pressure.schedule.rate",
+      "type": "java.lang.String",
+      "description": "Description for pressure.schedule.rate."
+    },
+    {
+      "name": "radiation.schedule.rate",
+      "type": "java.lang.String",
+      "description": "Description for radiation.schedule.rate."
+    }
+  ] }

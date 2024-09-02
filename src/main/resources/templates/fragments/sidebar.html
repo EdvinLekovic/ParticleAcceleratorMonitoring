@@ -1,0 +1,79 @@
+<!-- Sidebar with Accordion Menu -->
+<div class="sidebar">
+    <h3 class="text-center">Particle Accelerator Monitoring</h3>
+    <div id="accordionSidebar">
+        <div class="card bg-dark">
+            <div class="card-header" id="headingOne">
+                <h5 class="mb-0">
+                    <button class="btn btn-link text-white" data-toggle="collapse" data-target="#collapseOne"
+                            aria-expanded="true" aria-controls="collapseOne">
+                        Temperatures
+                    </button>
+                </h5>
+            </div>
+            <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionSidebar">
+                <div class="card-body">
+                    <a th:href="'/temperatures'">Temperatures data</a><br>
+                    <a th:href="'/temperatures/sensors'">Temperatures sensors</a><br>
+                </div>
+            </div>
+        </div>
+        <div class="card bg-dark">
+            <div class="card-header" id="headingTwo">
+                <h5 class="mb-0">
+                    <button class="btn btn-link collapsed text-white" data-toggle="collapse" data-target="#collapseTwo"
+                            aria-expanded="false" aria-controls="collapseTwo">
+                        Pressures
+                    </button>
+                </h5>
+            </div>
+            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+                <div class="card-body">
+                    <a th:href="'/pressures'">Pressure data</a><br>
+                    <a th:href="'/pressures/sensors'">Pressure sensors</a>
+                </div>
+            </div>
+        </div>
+        <div class="card bg-dark">
+            <div class="card-header" id="headingThree">
+                <h5 class="mb-0">
+                    <button class="btn btn-link collapsed text-white" data-toggle="collapse"
+                            data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                        Humidity
+                    </button>
+                </h5>
+            </div>
+            <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordionSidebar">
+                <div class="card-body">
+                    <a th:href="'/humidities'">Humidity data</a><br>
+                    <a th:href="'/humidities/sensors'">Humidity sensors</a><br>
+                </div>
+            </div>
+        </div>
+        <div class="card bg-dark">
+            <div class="card-header" id="headingFour">
+                <h5 class="mb-0">
+                    <button class="btn btn-link collapsed text-white" data-toggle="collapse"
+                            data-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                        Radiation
+                    </button>
+                </h5>
+            </div>
+            <div id="collapseFour" class="collapse" aria-labelledby="headingThree" data-parent="#accordionSidebar">
+                <div class="card-body">
+                    <a th:href="'/radiations'">Radiation data</a><br>
+                    <a th:href="'/radiations/sensors'">Radiation sensors</a><br>
+                </div>
+            </div>
+        </div>
+        <div class="card bg-dark">
+            <div class="card-header" id="headingFive">
+                <h5 class="mb-0">
+                    <a class="btn btn-link text-white" href="/scheduler">
+                        Schedulers
+                    </a>
+                </h5>
+            </div>
+        </div>
+    </div>
+</div>
